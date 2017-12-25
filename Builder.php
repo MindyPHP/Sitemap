@@ -1,11 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 /*
- * (c) Studio107 <mail@studio107.ru> http://studio107.ru
- * For the full copyright and license information, please view
- * the LICENSE file that was distributed with this source code.
+ * Studio 107 (c) 2017 Maxim Falaleev
  *
- * Author: Maxim Falaleev <max@studio107.ru>
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
 namespace Mindy\Sitemap;
@@ -13,34 +14,35 @@ namespace Mindy\Sitemap;
 use Exception;
 use Mindy\Sitemap\Entity\SiteMapEntity;
 use Mindy\Sitemap\Entity\SiteMapIndexEntity;
-use Symfony\Component\Filesystem\Filesystem;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 /**
  * Class Builder.
  */
 class Builder
 {
-    const LIMIT = 50000;
-
     /**
-     * @var array
+     * @var SitemapProviderInterface[]
      */
     protected $providers = [];
-
     /**
-     * @var UrlGeneratorInterface
+     * @var string
      */
-    protected $urlGenerator;
+    protected $hostWithScheme;
+    /**
+     * @var string
+     */
+    protected $path;
 
     /**
      * Builder constructor.
      *
-     * @param UrlGeneratorInterface $urlGenerator
+     * @param string $hostWithScheme
+     * @param string $path
      */
-    public function __construct(UrlGeneratorInterface $urlGenerator)
+    public function __construct(string $hostWithScheme, string $path)
     {
-        $this->urlGenerator = $urlGenerator;
+        $this->hostWithScheme = $hostWithScheme;
+        $this->path = $path;
     }
 
     /**
@@ -48,8 +50,6 @@ class Builder
      */
     public function addProvider(SitemapProviderInterface $provider)
     {
-        $provider->setUrlGenerator($this->urlGenerator);
-
         $this->providers[] = $provider;
     }
 
@@ -63,14 +63,8 @@ class Builder
      */
     public function saveFile($filePath, $fileContent)
     {
-        $filesystem = new Filesystem();
-        if (false === $filesystem->exists(dirname($filePath))) {
-            throw new Exception('Directory "'.dirname($filePath).'" does not exist!');
-        }
-        try {
-            $filesystem->mkdir(dirname($filePath));
-        } catch (Exception $e) {
-            throw new Exception($e->getMessage());
+        if (false === is_dir(dirname($filePath))) {
+            mkdir(dirname($filePath), 0755);
         }
         file_put_contents($filePath, $fileContent);
 
@@ -97,42 +91,49 @@ class Builder
     }
 
     /**
-     * @param $scheme
-     * @param $host
-     * @param $path
-     *
      * @return array
      */
-    public function build($scheme, $host, $path, $name = 'sitemap.xml')
+    public function fetchEntities(): array
     {
-        $sitemaps = [];
-
         $entities = [];
         foreach ($this->providers as $provider) {
-            foreach ($provider->build($scheme, $host) as $location) {
+            foreach ($provider->build($this->hostWithScheme) as $location) {
                 $entities[] = $location;
             }
         }
 
-        if (count($entities) > self::LIMIT) {
+        return $entities;
+    }
+
+    /**
+     * @param int $limit
+     *
+     * @return array
+     */
+    public function build(int $limit = 50000)
+    {
+        $sitemaps = [];
+
+        $entities = $this->fetchEntities();
+
+        $dirname = dirname($this->path);
+
+        if (count($entities) > $limit) {
             $sitemapIndex = new SiteMapIndexEntity();
-            foreach (array_chunk($entities, self::LIMIT) as $i => $chunk) {
-                $sitemap = $this->saveSitemap(sprintf('%s/sitemap-%s.xml', $path, $i), $chunk);
-                $sitemaps[] = $loc = sprintf('%s/sitemap-%s.xml', rtrim($host, '/'), $i);
+            foreach (array_chunk($entities, $limit) as $i => $chunk) {
+                $sitemap = $this->saveSitemap(sprintf('%s/sitemap-%s.xml', $dirname, $i), $chunk);
+                $sitemaps[] = $loc = sprintf('%s/sitemap-%s.xml', rtrim($dirname, '/'), $i);
                 $sitemap->setLoc($loc);
 
                 $sitemapIndex->addSiteMap($sitemap);
             }
 
-            $this->saveFile(
-                sprintf('%s/%s', $path, $name),
-                $sitemapIndex->getXml()
-            );
+            $this->saveFile($this->path, $sitemapIndex->getXml());
         } else {
-            $this->saveSitemap(sprintf('%s/%s', $path, $name), $entities);
+            $this->saveSitemap($this->path, $entities);
         }
 
-        $sitemaps[] = sprintf('%s/%s', rtrim($host, '/'), $name);
+        $sitemaps[] = $this->path;
 
         return $sitemaps;
     }

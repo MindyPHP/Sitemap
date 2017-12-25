@@ -1,11 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 /*
- * (c) Studio107 <mail@studio107.ru> http://studio107.ru
- * For the full copyright and license information, please view
- * the LICENSE file that was distributed with this source code.
+ * Studio 107 (c) 2017 Maxim Falaleev
  *
- * Author: Maxim Falaleev <max@studio107.ru>
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
 namespace Mindy\Sitemap;
@@ -20,40 +21,36 @@ abstract class AbstractSitemapProvider implements SitemapProviderInterface
     /**
      * @var UrlGeneratorInterface
      */
-    protected $urlGenerator;
+    protected $router;
 
     /**
      * PageProvider constructor.
      *
-     * @param UrlGeneratorInterface $urlGenerator
-     *
-     * @return $this
+     * @param UrlGeneratorInterface $router
      */
-    public function setUrlGenerator(UrlGeneratorInterface $urlGenerator)
+    public function __construct(UrlGeneratorInterface $router)
     {
-        $this->urlGenerator = $urlGenerator;
-
-        return $this;
+        $this->router = $router;
     }
 
     /**
-     * @param $scheme
-     * @param $host
+     * @param string $hostWithScheme
      * @param $route
      * @param array $parameters
      *
      * @return string
      */
-    protected function generateLoc($scheme, $host, $route, $parameters = [])
+    protected function generateLoc($hostWithScheme, $route, $parameters = [])
     {
-        if (null === $this->urlGenerator) {
+        if (null === $this->router) {
             throw new \RuntimeException('UrlGenerator interface is missing');
         }
-        $this->urlGenerator->getContext()->setHost($host);
-        $this->urlGenerator->getContext()->setScheme($scheme);
 
-        return $this
-            ->urlGenerator
-            ->generate($route, $parameters, UrlGeneratorInterface::ABSOLUTE_URL);
+        list($host, $scheme) = explode('::/', $hostWithScheme);
+
+        $this->router->getContext()->setHost($host);
+        $this->router->getContext()->setScheme($scheme);
+
+        return $this->router->generate($route, $parameters, UrlGeneratorInterface::ABSOLUTE_URL);
     }
 }
