@@ -50,7 +50,7 @@ class BuilderTest extends TestCase
 
     public function testBuild()
     {
-        $builder = new Builder('https://example.com', __DIR__.'/var/sitemap.xml');
+        $builder = new Builder('https://example.com', __DIR__.'/var');
         $this->assertSame([__DIR__.'/var/sitemap.xml'], $builder->build());
         $this->assertSame(0, count($builder->fetchEntities()));
 
