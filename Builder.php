@@ -120,8 +120,9 @@ class Builder
 
             foreach (array_chunk($entities, $limit) as $i => $chunk) {
                 $sitemap = $this->saveSitemap(sprintf('%s/sitemap-%s.xml', $this->path, $i), $chunk);
-                $sitemaps[] = $loc = sprintf('%s/sitemap-%s.xml', rtrim($this->hostWithScheme, '/'), $i);
+                $loc = sprintf('%s/sitemap-%s.xml', rtrim($this->hostWithScheme, '/'), $i);
                 $sitemap->setLoc($loc);
+                $sitemaps[] = sprintf('%s/sitemap-%s.xml', rtrim($this->path, '/'), $i);
 
                 $sitemapIndex->addSiteMap($sitemap);
             }

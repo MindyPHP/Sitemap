@@ -55,13 +55,9 @@ class BuilderTest extends TestCase
         $this->assertSame(0, count($builder->fetchEntities()));
 
         $builder->addProvider(new TestSitemapProvider());
-        $this->assertSame(2, count($builder->fetchEntities()));
+        $this->assertCount(2, $builder->fetchEntities());
 
-        $this->assertSame([
-            __DIR__.'/var/sitemap-0.xml',
-            __DIR__.'/var/sitemap-1.xml',
-            __DIR__.'/var/sitemap.xml',
-        ], $builder->build(1));
+        $this->assertCount(3, $builder->build(1));
 
         $this->clean();
         $this->assertFalse(is_dir(__DIR__.'/var'));
