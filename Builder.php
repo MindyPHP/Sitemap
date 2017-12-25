@@ -59,16 +59,15 @@ class Builder
      *
      * @throws Exception
      *
-     * @return $this
+     * @return bool|int
      */
     public function saveFile($filePath, $fileContent)
     {
         if (false === is_dir(dirname($filePath))) {
             mkdir(dirname($filePath), 0755);
         }
-        file_put_contents($filePath, $fileContent);
 
-        return $this;
+        return file_put_contents($filePath, $fileContent);
     }
 
     /**
@@ -118,20 +117,21 @@ class Builder
 
         if (count($entities) > $limit) {
             $sitemapIndex = new SiteMapIndexEntity();
+
             foreach (array_chunk($entities, $limit) as $i => $chunk) {
                 $sitemap = $this->saveSitemap(sprintf('%s/sitemap-%s.xml', $this->path, $i), $chunk);
-                $sitemaps[] = $loc = sprintf('%s/sitemap-%s.xml', rtrim($this->path, '/'), $i);
+                $sitemaps[] = $loc = sprintf('%s/sitemap-%s.xml', rtrim($this->hostWithScheme, '/'), $i);
                 $sitemap->setLoc($loc);
 
                 $sitemapIndex->addSiteMap($sitemap);
             }
 
-            $this->saveFile(sprintf("%s/sitemap.xml", rtrim($this->path, '/')), $sitemapIndex->getXml());
+            $this->saveFile(sprintf('%s/sitemap.xml', rtrim($this->path, '/')), $sitemapIndex->getXml());
         } else {
-            $this->saveSitemap(sprintf("%s/sitemap.xml", rtrim($this->path, '/')), $entities);
+            $this->saveSitemap(sprintf('%s/sitemap.xml', rtrim($this->path, '/')), $entities);
         }
 
-        $sitemaps[] = sprintf("%s/sitemap.xml", rtrim($this->path, '/'));
+        $sitemaps[] = sprintf('%s/sitemap.xml', rtrim($this->path, '/'));
 
         return $sitemaps;
     }
