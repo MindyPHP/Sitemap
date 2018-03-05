@@ -46,7 +46,7 @@ abstract class AbstractSitemapProvider implements SitemapProviderInterface
             throw new \RuntimeException('UrlGenerator interface is missing');
         }
 
-        list($host, $scheme) = explode('::/', $hostWithScheme);
+        list($host, $scheme) = explode('://', $hostWithScheme);
 
         $this->router->getContext()->setHost($host);
         $this->router->getContext()->setScheme($scheme);
